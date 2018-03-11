@@ -5,7 +5,9 @@ import praw, pdb, re, os, time
 
 PRAW_BOT_SITE = "you_forgot_the_slash"
 REPLIED_FILE = "replied.txt"
+SUBREDDITS = "pythonforengineers"
 SUBREDDITS = "karmacourt"
+DAYS_VALID = 2
 
 reddit = praw.Reddit(PRAW_BOT_SITE)
 subreddit = reddit.subreddit(SUBREDDITS)
@@ -16,9 +18,18 @@ with open(REPLIED_FILE, "r") as f:  # Do not use 'w+', it empties the file
     print(replied)
     print("====================================================")
 
+start_time = time.time()
+secs_before_valid = float(DAYS_VALID*24*60*60)
+reply_after = start_time - secs_before_valid
+
+print(start_time)
+print(reply_after)
+
 username_pattern = re.compile("u\/(?:[a-z]|[A-Z]|[0-9]|-|_){3,20}", re.IGNORECASE) # Match Reddit username pattern limitations
 for submission in subreddit.stream.submissions():
-    if submission.id not in replied:
+    if submission.created_utc < reply_after:  # Only reply if submissions are at most a 'DAYS_VALID' old from initial run
+        continue
+    if submission.id not in replied:  # Do not reply if already done
         title_matches = username_pattern.findall(submission.title)
         text_matches = username_pattern.findall(submission.selftext)
         if (title_matches or text_matches) and submission.id not in replied:
